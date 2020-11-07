@@ -2,7 +2,18 @@ from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
 
-class User(db.Model):
+class DBManager():
+
+    @staticmethod
+    def commitSession():
+        db.session.commit()
+
+class ModelHelper():
+
+    def save(self):
+        db.session.add(self)
+
+class User(db.Model, ModelHelper):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(80), unique=False, nullable=False)
@@ -26,10 +37,11 @@ class User(db.Model):
             "id": self.id,
             "email": self.email,
             "full_name": self.full_name,
-            "phone": self.phone
+            "phone": self.phone,
+            "role_id": self.role_id
         }
 
-class Order(db.Model): 
+class Order(db.Model, ModelHelper): 
     id = db.Column(db.Integer, primary_key=True) 
     description = db.Column(db.String(120), unique=False, nullable=False)   
     # Claves Foráneas:
@@ -46,10 +58,6 @@ class Order(db.Model):
     #many
     documents = db.relationship("Document", back_populates="order", lazy=True)
 
-    def save(self):
-        db.session.add(self)
-        db.session.commit()
-
     def __repr__(self):
         return '<Order %r>' % self.id
 
@@ -59,10 +67,11 @@ class Order(db.Model):
             "helper_id": self.helper_id,
             "helper": self.helper.serialize(),
             "status": self.status.serialize(),
+            "status_id": self.status_id,
             "description": self.description
         }
 
-class Status(db.Model): 
+class Status(db.Model, ModelHelper): 
     id = db.Column(db.Integer, primary_key=True) 
     name = db.Column(db.String(80), unique=False, nullable=False)
     # Relaciones bidireccionales:
@@ -77,7 +86,7 @@ class Status(db.Model):
             "name": self.name        
         }   
 
-class Role(db.Model): 
+class Role(db.Model, ModelHelper): 
     id = db.Column(db.Integer, primary_key=True) 
     name = db.Column(db.String(20), unique=False, nullable=False) 
     # Relaciones bidireccionales:
@@ -90,9 +99,9 @@ class Role(db.Model):
         return {
             "id": self.id,
             "name": self.name        
-        }   
+        }
 
-class Document(db.Model): 
+class Document(db.Model, ModelHelper): 
     id = db.Column(db.Integer, primary_key=True) 
     name = db.Column(db.String(20), unique=False, nullable=False) 
     url = db.Column(db.String(255), unique=False, nullable=False) 
@@ -109,14 +118,11 @@ class Document(db.Model):
     def serialize(self):
         return {
             "id": self.id,
-            "name": self.name        
+            "name": self.name,
+            "url": self.url     
         }
 
-    def save(self):
-        db.session.add(self)
-        db.session.commit()
-
-class Address(db.Model): 
+class Address(db.Model, ModelHelper): 
     id = db.Column(db.Integer, primary_key=True)
     address = db.Column(db.String(120), unique=False, nullable=False)
     city = db.Column(db.String(120), unique=False, nullable=False)
@@ -137,11 +143,3 @@ class Address(db.Model):
             "id": self.id,
             "name": self.address        
         }   
-
-#
-#class Order(Base): #one
-#    lineitems = relationship("Lineitem", back_populates="order")
-#
-#class Lineitem(Base): #many
-#    order_id = Column(Integer, ForeignKey('order.id'))
-#    order = relationship("Order", back_populates="lineitems")

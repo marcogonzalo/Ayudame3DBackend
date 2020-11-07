@@ -8,15 +8,12 @@ from flask_swagger import swagger
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
-from models import db, User, Order, Document
+from models import db, User, Order, Document, Role, DBManager, User
 from amazonawss3 import upload_file_to_s3
 from flask_jwt_extended import (
     JWTManager, jwt_required, create_access_token,
     get_jwt_identity
 )
-
-
-#from models import Person
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
@@ -34,6 +31,20 @@ jwt = JWTManager(app)
 @app.errorhandler(APIException)
 def handle_invalid_usage(error):
     return jsonify(error.to_dict()), error.status_code
+
+@app.cli.command("create-roles")
+def create_roles():
+    if not Role.query.get(1):
+        role = Role(id=1, name="Admin")
+        role.save()
+    if not Role.query.get(2):
+        role = Role(id=2, name="Manager")
+        role.save()
+    if not Role.query.get(3):
+        role = Role(id=3, name="Helper")
+        role.save()
+    DBManager.commitSession()
+    return
 
 # generate sitemap with all your endpoints
 @app.route('/')
@@ -54,27 +65,47 @@ def orders():
     ordersJson = list(map(lambda order: order.serialize(), orders))
     return jsonify(ordersJson), 200
 
+@app.route('/orders/<int:id>', methods=['GET'])
+@jwt_required
+def get_order(id):
+    order = Order.query.get(id)
+    return jsonify(order.serialize()), 200
 
-@app.route('/upload-file', methods=['POST'])
-def upload_file():
-    file = request.files["document"]
-    description = request.form.get('description')
+@app.route('/helpers', methods=['GET'])
+@jwt_required
+def helpers():
+    helpers = User.query.filter_by(role_id=3).all()
+    helpersJson = list(map(lambda helper: helper.serialize(), helpers))
+    return jsonify(helpersJson), 200
+
+@app.route('/orders/create', methods=['POST'])
+@jwt_required
+def create_order():
+    user_authenticated_id = get_jwt_identity()
     helper_id = request.form.get('helper_id')
+    description = request.form.get('description')
+    
+    order = Order(description=description, helper_id=helper_id, status_id=1)
+    order.save()
 
-    if file:
-        url_document = upload_file_to_s3(file, os.environ.get('S3_BUCKET_NAME'))
+    print(request.files)
+    files = request.files
+    for key in files:
+        print(key)
+        file = files[key]
+        print(file)
+        if file:
+            url_document = upload_file_to_s3(file, os.environ.get('S3_BUCKET_NAME'))
+            print(url_document)
+            document = Document(name=file.filename, url=url_document, order=order, user_id=user_authenticated_id)
+            document.save()
 
-        order = Order(description=description, helper_id=helper_id, status_id=1)
-        order.save()
+    DBManager.commitSession()
 
-        document = Document(name=file.filename,url=url_document, order_id=order.id, user_id=1)
-        document.save()
-
-        return url_document, 200
-
-    else:
-        return "ko"
-
+    orderSerialized = order.serialize()
+    #Añadir los documentos al objeto
+    orderSerialized["documents"] = list(map(lambda document: document.serialize(), order.documents))
+    return jsonify({"status": "ok", "order": orderSerialized})
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -90,11 +121,15 @@ def login():
     if not user:
         return jsonify({"status": 'ko', "msg": "Bad username or password"}), 401
     access_token = create_access_token(identity=user.id)
-    return jsonify({"status": 'ok', "access_token": access_token}), 200
+    return jsonify({"status": 'ok', "access_token": access_token, "user": user.serialize()}), 200
 
-#====================================================================================
+@app.route('/get-user-authenticated', methods=["GET"])
+@jwt_required
+def get_user_authenticated():
+    current_user_id = get_jwt_identity()
+    user = User.query.get(current_user_id)
+    return jsonify(user=user.serialize()), 200
 
-# this only runs if `$ python src/main.py` is executed
 if __name__ == '__main__':
     PORT = int(os.environ.get('PORT', 3000))
     app.run(host='0.0.0.0', port=PORT, debug=False)
