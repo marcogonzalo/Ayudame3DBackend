@@ -8,7 +8,7 @@ from flask_swagger import swagger
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
-from models import db, User, Order, Document, Role, DBManager, User
+from models import db, User, Order, Document, Role, DBManager, User, Status, Address
 from amazonawss3 import upload_file_to_s3
 from flask_jwt_extended import (
     JWTManager, jwt_required, create_access_token,
@@ -34,15 +34,35 @@ def handle_invalid_usage(error):
 
 @app.cli.command("create-roles")
 def create_roles():
-    if not Role.query.get(1):
-        role = Role(id=1, name="Admin")
+    if not Role.query.get(Role.ADMIN_ROLE_ID):
+        role = Role(id=Role.ADMIN_ROLE_ID, name="Admin")
         role.save()
-    if not Role.query.get(2):
-        role = Role(id=2, name="Manager")
+    if not Role.query.get(Role.MANAGER_ROLE_ID):
+        role = Role(id=Role.MANAGER_ROLE_ID, name="Manager")
         role.save()
-    if not Role.query.get(3):
-        role = Role(id=3, name="Helper")
+    if not Role.query.get(Role.HELPER_ROLE_ID):
+        role = Role(id=Role.HELPER_ROLE_ID, name="Helper")
         role.save()
+    DBManager.commitSession()
+    return
+
+@app.cli.command("create-statuses")
+def create_statuses():
+    if not Status.query.get(Status.PENDING_STATUS_ID):
+        status = Status(id=Status.PENDING_STATUS_ID, name="Pending")
+        status.save()
+    if not Status.query.get(Status.REJECTED_STATUS_ID):
+        status = Status(id=Status.REJECTED_STATUS_ID, name="Rejected")
+        status.save()
+    if not Status.query.get(Status.PROCESSING_STATUS_ID):
+        status = Status(id=Status.PROCESSING_STATUS_ID, name="Processing")
+        status.save()
+    if not Status.query.get(Status.READY_STATUS_ID):
+        status = Status(id=Status.READY_STATUS_ID, name="Ready")
+        status.save()
+    if not Status.query.get(5):
+        status = Status(id=5, name="Complete")
+        status.save()
     DBManager.commitSession()
     return
 
@@ -68,13 +88,73 @@ def orders():
 @app.route('/orders/<int:id>', methods=['GET'])
 @jwt_required
 def get_order(id):
+    order = Order.query.get(id)   
+    return jsonify(order.serializeForEditView()), 200
+
+@app.route('/orders/<int:id>/accept', methods=['POST'])
+@jwt_required
+def accept_order(id):
     order = Order.query.get(id)
-    return jsonify(order.serialize()), 200
+    order.status_id = Status.PROCESSING_STATUS_ID
+    order.save()
+    DBManager.commitSession()
+    return jsonify(order.serializeForEditView()), 200
+
+@app.route('/orders/<int:id>/set-ready', methods=['POST'])
+@jwt_required
+def set_order_ready(id):
+    order = Order.query.get(id)
+    order.status_id = Status.READY_STATUS_ID
+    order.save()
+    DBManager.commitSession()
+    return jsonify(order.serializeForEditView()), 200
+
+@app.route('/orders/<int:id>/save-video', methods=['POST'])
+@jwt_required
+def save_video(id):
+    user_authenticated_id = get_jwt_identity()
+    video = request.json.get('video', None)
+    order = Order.query.get(id)
+    
+    document = Document(name="Video", url=video, order=order, user_id=user_authenticated_id)
+    document.save()
+
+    DBManager.commitSession()
+    return jsonify(order.serializeForEditView()), 200
+
+@app.route('/orders/<int:id>/addresses/save', methods=['POST'])
+@jwt_required
+def save_order_addresses(id):
+    user_authenticated_id = get_jwt_identity()
+    
+    pickup_address = Address(address=request.json.get('pickup').get('address'), city=request.json.get('pickup').get('city'), country=request.json.get('pickup').get('country'), cp=request.json.get('pickup').get('CP'),user_id=user_authenticated_id)
+    pickup_address.save()
+    
+    delivery_address = Address(address=request.json.get('delivery').get('address'), city=request.json.get('delivery').get('city'), country=request.json.get('delivery').get('country'), cp=request.json.get('delivery').get('CP'),user_id=user_authenticated_id)
+    delivery_address.save()
+    
+    order = Order.query.get(id)
+    
+    order.address_delivery = delivery_address
+    order.address_pickup = pickup_address
+
+    order.save()
+
+    DBManager.commitSession()
+    return jsonify(order.serializeForEditView()), 200
+
+@app.route('/documents/<int:id>/delete', methods=['DELETE'])
+@jwt_required
+def delete_document(id):
+    document = Document.query.get(id)
+    document.delete()
+    DBManager.commitSession()
+    return jsonify(document.serialize()), 200
 
 @app.route('/helpers', methods=['GET'])
 @jwt_required
 def helpers():
-    helpers = User.query.filter_by(role_id=3).all()
+    helpers = User.query.filter_by(role_id=Role.HELPER_ROLE_ID).all()
     helpersJson = list(map(lambda helper: helper.serialize(), helpers))
     return jsonify(helpersJson), 200
 
@@ -88,17 +168,17 @@ def create_order():
     order = Order(description=description, helper_id=helper_id, status_id=1)
     order.save()
 
-    print(request.files)
-    files = request.files
-    for key in files:
-        print(key)
-        file = files[key]
-        print(file)
-        if file:
-            url_document = upload_file_to_s3(file, os.environ.get('S3_BUCKET_NAME'))
-            print(url_document)
-            document = Document(name=file.filename, url=url_document, order=order, user_id=user_authenticated_id)
-            document.save()
+    if os.environ.get('S3_ID'):
+        files = request.files
+        for key in files:
+            file = files[key]
+            if file:
+                url_document = upload_file_to_s3(file, os.environ.get('S3_BUCKET_NAME'))
+                if url_document:
+                    document = Document(name=file.filename, url=url_document, order=order, user_id=user_authenticated_id)
+                    document.save()
+    else:
+        print("Faltan las credenciales de AWS")
 
     DBManager.commitSession()
 

@@ -13,6 +13,9 @@ class ModelHelper():
     def save(self):
         db.session.add(self)
 
+    def delete(self):
+        db.session.delete(self)
+
 class User(db.Model, ModelHelper):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(120), unique=True, nullable=False)
@@ -71,11 +74,25 @@ class Order(db.Model, ModelHelper):
             "description": self.description
         }
 
+    def serializeForEditView(self):
+        order = self.serialize()
+        order["documents"] = list(map(lambda document: document.serialize(), self.documents))
+        if self.address_delivery:
+            order["address_delivery"] = self.address_delivery.serialize()
+        if self.address_pickup:
+            order["address_pickup"] = self.address_pickup.serialize()
+        return order
+
 class Status(db.Model, ModelHelper): 
     id = db.Column(db.Integer, primary_key=True) 
     name = db.Column(db.String(80), unique=False, nullable=False)
     # Relaciones bidireccionales:
     orders = db.relationship("Order", back_populates="status", lazy=True)
+
+    PENDING_STATUS_ID = 1
+    REJECTED_STATUS_ID = 2
+    PROCESSING_STATUS_ID = 3
+    READY_STATUS_ID = 4
 
     def __repr__(self):
         return '<Status %r>' % self.id
@@ -92,6 +109,10 @@ class Role(db.Model, ModelHelper):
     # Relaciones bidireccionales:
     users = db.relationship("User", back_populates="role", lazy=True)
 
+    ADMIN_ROLE_ID = 1
+    MANAGER_ROLE_ID = 2
+    HELPER_ROLE_ID = 3
+
     def __repr__(self):
         return '<Role %r>' % self.name
 
@@ -103,7 +124,7 @@ class Role(db.Model, ModelHelper):
 
 class Document(db.Model, ModelHelper): 
     id = db.Column(db.Integer, primary_key=True) 
-    name = db.Column(db.String(20), unique=False, nullable=False) 
+    name = db.Column(db.String(250), unique=False, nullable=False) 
     url = db.Column(db.String(255), unique=False, nullable=False) 
     # Claves Foráneas:
     order_id = db.Column(db.Integer, db.ForeignKey('order.id'), unique=False, nullable=False)
@@ -119,7 +140,8 @@ class Document(db.Model, ModelHelper):
         return {
             "id": self.id,
             "name": self.name,
-            "url": self.url     
+            "url": self.url,
+            "user_id": self.user_id
         }
 
 class Address(db.Model, ModelHelper): 
@@ -127,7 +149,7 @@ class Address(db.Model, ModelHelper):
     address = db.Column(db.String(120), unique=False, nullable=False)
     city = db.Column(db.String(120), unique=False, nullable=False)
     country = db.Column(db.String(120), unique=False, nullable=False)
-    cp = db.Column(db.Integer, unique=False, nullable=False)  
+    cp = db.Column(db.String(6), unique=False, nullable=False)
     # Claves Foráneas:
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), unique=False, nullable=False)
     # Relaciones bidireccionales:
@@ -141,5 +163,8 @@ class Address(db.Model, ModelHelper):
     def serialize(self):
         return {
             "id": self.id,
-            "name": self.address        
+            "address": self.address,
+            "city": self.city,
+            "country": self.country,
+            "cp": self.cp,
         }   
