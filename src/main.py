@@ -24,7 +24,7 @@ db.init_app(app)
 CORS(app)
 setup_admin(app)
 
-app.config['JWT_SECRET_KEY'] = 'super-secret'  # Change this!
+app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')  # Change this!
 jwt = JWTManager(app)
 
 # Handle/serialize errors like a JSON object
@@ -67,12 +67,12 @@ def create_statuses():
     return
 
 # generate sitemap with all your endpoints
-@app.route('/')
-def sitemap():
-    return generate_sitemap(app)
+# @app.route('/')
+# def sitemap():
+#     return generate_sitemap(app)
 
 #========================================================================
-@app.route('/user', methods=['GET'])
+@app.route('/users', methods=['GET'])
 def users():
     users = User.query.all()
     usersJson = list(map(lambda user: user.serialize(), users))
