@@ -14,6 +14,7 @@ from flask_jwt_extended import (
     JWTManager, jwt_required, create_access_token,
     get_jwt_identity
 )
+from mailer import new_order_mail
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
@@ -183,6 +184,9 @@ def create_order():
     DBManager.commitSession()
 
     orderSerialized = order.serialize()
+
+    if orderSerialized:
+        new_order_mail(order.helper,order)
     #Añadir los documentos al objeto
     orderSerialized["documents"] = list(map(lambda document: document.serialize(), order.documents))
     return jsonify({"status": "ok", "order": orderSerialized})
