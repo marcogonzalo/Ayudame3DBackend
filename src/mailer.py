@@ -27,3 +27,25 @@ def new_order_mail(helper, order):
     )
     return __send_email(msg)
 
+def order_acceptance_mail(order):
+    msg = Mail(
+        from_email=os.environ.get('MAIL_DEFAULT_SENDER'),
+        to_emails=os.environ.get('MAIL_DEFAULT_SENDER'),
+        subject=f'El pedido {order.id} ha sido aceptado',
+        html_content=('<h1>¡Enhorabuena!</h1>'
+                f'<p>El pedido {order.id} ha sido aceptado.</p>'
+        )
+    )
+    return __send_email(msg)
+
+def order_rejection_mail(order):
+    msg = Mail(
+        from_email=os.environ.get('MAIL_DEFAULT_SENDER'),
+        to_emails=os.environ.get('MAIL_DEFAULT_SENDER'),
+        subject=f'ATENCIÓN: El pedido {order.id} ha sido rechazado',
+        html_content=('<h1>¡Atención!</h1>'
+                f'<p>El pedido {order.id} ha sido rechazado.</p>'
+        )
+    )
+    return __send_email(msg)
+
