@@ -79,6 +79,11 @@ def users():
     usersJson = list(map(lambda user: user.serialize(), users))
     return jsonify(usersJson), 200
 
+@app.route('/users/<int:id>', methods=['GET'])
+def edit_user(id):
+    user = User.query.get(id)
+    return jsonify(user.serialize()), 200  
+
 @app.route('/orders', methods=['GET'])
 @jwt_required
 def orders():
