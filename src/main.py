@@ -14,7 +14,7 @@ from flask_jwt_extended import (
     JWTManager, jwt_required, create_access_token,
     get_jwt_identity
 )
-from mailer import new_order_mail, order_acceptance_mail, order_rejection_mail
+from mailer import new_order_mail, order_acceptance_mail, order_rejection_mail, order_status_update_mail
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
@@ -99,6 +99,7 @@ def accept_order(id):
     order.status_id = Status.PROCESSING_STATUS_ID
     order.save()
     order_acceptance_mail(order)
+    DBManager.commitSession()
 
     return jsonify(order.serializeForEditView()), 200
 
@@ -108,6 +109,7 @@ def reject_order(id):
     order = Order.query.get(id)
     order.status_id = Status.REJECTED_STATUS_ID
     order.save()
+    response = DBManager.commitSession()
     order_rejection_mail(order)
 
     return jsonify(order.serializeForEditView()), 200
@@ -119,6 +121,7 @@ def set_order_ready(id):
     order.status_id = Status.READY_STATUS_ID
     order.save()
     DBManager.commitSession()
+    order_status_update_mail(order)
     return jsonify(order.serializeForEditView()), 200
 
 @app.route('/orders/<int:id>/save-video', methods=['POST'])
@@ -132,6 +135,8 @@ def save_video(id):
     document.save()
 
     DBManager.commitSession()
+    order_new_data_mail(order)
+
     return jsonify(order.serializeForEditView()), 200
 
 @app.route('/orders/<int:id>/addresses/save', methods=['POST'])
@@ -153,6 +158,8 @@ def save_order_addresses(id):
     order.save()
 
     DBManager.commitSession()
+    order_new_data_mail(order)
+
     return jsonify(order.serializeForEditView()), 200
 
 @app.route('/documents/<int:id>/delete', methods=['DELETE'])
