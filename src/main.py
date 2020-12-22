@@ -91,6 +91,15 @@ def edit_user(id):
 def save_user(id):
     userData = request.json.get('user', None)
     user = User.query.get(id)
+    
+    user.email = userData["email"]
+    user.full_name = userData["full_name"]
+    user.phone = userData["phone"]
+    user.role_id = userData["role_id"]
+
+    user.save()
+    DBManager.commitSession()
+
     return jsonify(user.serialize()), 200
 
 @app.route('/roles', methods=['GET'])

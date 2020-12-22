@@ -41,6 +41,7 @@ class User(db.Model, ModelHelper):
             "email": self.email,
             "full_name": self.full_name,
             "phone": self.phone,
+            "role_id": self.role_id,
             "role": self.role.serialize()
         }
 
