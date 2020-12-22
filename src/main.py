@@ -81,7 +81,12 @@ def users():
 @app.route('/orders', methods=['GET'])
 @jwt_required
 def orders():
-    orders = Order.query.all()
+    user_authenticated_id = get_jwt_identity()
+    user = User.query.get(user_authenticated_id)
+    if user.role_id == Role.HELPER_ROLE_ID:
+        orders = Order.query.filter(Order.helper_id == user_authenticated_id, Order.status_id != Status.REJECTED_STATUS_ID)
+    else:
+        orders = Order.query.all()
     ordersJson = list(map(lambda order: order.serialize(), orders))
     return jsonify(ordersJson), 200
 

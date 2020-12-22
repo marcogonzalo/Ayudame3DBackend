@@ -95,7 +95,7 @@ class Status(db.Model, ModelHelper):
     READY_STATUS_ID = 4
 
     def __repr__(self):
-        return '<Status %r>' % self.id
+        return '<Status %s>' % self.name
 
     def serialize(self):
         return {
