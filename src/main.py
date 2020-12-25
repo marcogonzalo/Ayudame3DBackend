@@ -74,10 +74,40 @@ def create_statuses():
 
 #========================================================================
 @app.route('/users', methods=['GET'])
+@jwt_required
 def users():
     users = User.query.all()
     usersJson = list(map(lambda user: user.serialize(), users))
     return jsonify(usersJson), 200
+
+@app.route('/users/<int:id>', methods=['GET'])
+@jwt_required
+def edit_user(id):
+    user = User.query.get(id)
+    return jsonify(user.serialize()), 200
+
+@app.route('/users/<int:id>', methods=['PUT'])
+@jwt_required
+def save_user(id):
+    userData = request.json.get('user', None)
+    user = User.query.get(id)
+    
+    user.email = userData["email"]
+    user.full_name = userData["full_name"]
+    user.phone = userData["phone"]
+    user.role_id = userData["role_id"]
+
+    user.save()
+    DBManager.commitSession()
+
+    return jsonify(user.serialize()), 200
+
+@app.route('/roles', methods=['GET'])
+@jwt_required
+def roles():
+    roles = Role.query.all()
+    rolesJson = list(map(lambda role: role.serialize(), roles))
+    return jsonify(rolesJson), 200
 
 @app.route('/orders', methods=['GET'])
 @jwt_required
