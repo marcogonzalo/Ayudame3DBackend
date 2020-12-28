@@ -222,12 +222,12 @@ def create_order():
     order = Order(description=description, helper_id=helper_id, status_id=1)
     order.save()
 
-    if os.environ.get('S3_ID'):
+    if os.environ.get('AWS_S3_BUCKET_NAME'):
         files = request.files
         for key in files:
             file = files[key]
             if file:
-                url_document = upload_file_to_s3(file, os.environ.get('S3_BUCKET_NAME'))
+                url_document = upload_file_to_s3(file, os.environ.get('AWS_S3_BUCKET_NAME'))
                 if url_document:
                     document = Document(name=file.filename, url=url_document, order=order, user_id=user_authenticated_id)
                     document.save()

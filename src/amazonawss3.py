@@ -2,12 +2,12 @@ import os, boto3, botocore
 
 s3 = boto3.client(
    "s3",
-   aws_access_key_id=os.environ.get('S3_ID'),
-   aws_secret_access_key=os.environ.get('S3_SECRET')
+   aws_access_key_id=os.environ.get('AWS_ACCESS_KEY_ID'),
+   aws_secret_access_key=os.environ.get('AWS_SECRET_ACCESS_KEY')
 )
 
 def upload_file_to_s3(file, bucket_name, acl="public-read"):
-    s3_location = 'https://{}.s3.amazonaws.com/'.format(bucket_name)
+    s3_location = f'https://{bucket_name}.s3.amazonaws.com/'
     try:
         s3.upload_fileobj(
             file,
