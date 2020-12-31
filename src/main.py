@@ -121,11 +121,63 @@ def orders():
     ordersJson = list(map(lambda order: order.serialize(), orders))
     return jsonify(ordersJson), 200
 
+@app.route('/orders', methods=['POST'])
+@jwt_required
+def create_order():
+    user_authenticated_id = get_jwt_identity()
+    helper_id = request.form.get('helper_id')
+    description = request.form.get('description')
+    
+    order = Order(description=description, helper_id=helper_id, status_id=1)
+    order.save()
+
+    if os.environ.get('AWS_S3_BUCKET_NAME'):
+        files = request.files
+        for key in files:
+            file = files[key]
+            if file:
+                url_document = upload_file_to_s3(file, os.environ.get('AWS_S3_BUCKET_NAME'))
+                if url_document:
+                    document = Document(name=file.filename, url=url_document, order=order, user_id=user_authenticated_id)
+                    document.save()
+    else:
+        print("Faltan las credenciales de AWS")
+
+    DBManager.commitSession()
+
+    orderSerialized = order.serialize()
+
+    if orderSerialized:
+        new_order_mail(order.helper,order)
+    #Añadir los documentos al objeto
+    orderSerialized["documents"] = list(map(lambda document: document.serialize(), order.documents))
+    return jsonify({"status": "ok", "order": orderSerialized})
+
+
 @app.route('/orders/<int:id>', methods=['GET'])
 @jwt_required
 def get_order(id):
     order = Order.query.get(id)   
     return jsonify(order.serializeForEditView()), 200
+
+@app.route('/orders/<int:id>', methods=['PUT'])
+@jwt_required
+def update_order(id):
+    order = Order.query.get(id)
+    if request.form.get('helper_id') and int(request.form.get('helper_id')) != order.helper_id:
+        order.status_id = Status.PROCESSING_STATUS_ID
+        order.helper_id = request.form.get('helper_id')
+        order.save()
+        new_order_mail(order.helper,order)
+    if not request.form.get('description') is None:
+        order.description = request.form.get('description')
+        order.save()
+
+    DBManager.commitSession()
+
+    orderSerialized = order.serializeForEditView()
+        
+    return jsonify(orderSerialized), 200
 
 @app.route('/orders/<int:id>/accept', methods=['POST'])
 @jwt_required
@@ -211,38 +263,6 @@ def helpers():
     helpers = User.query.filter_by(role_id=Role.HELPER_ROLE_ID).all()
     helpersJson = list(map(lambda helper: helper.serialize(), helpers))
     return jsonify(helpersJson), 200
-
-@app.route('/orders/create', methods=['POST'])
-@jwt_required
-def create_order():
-    user_authenticated_id = get_jwt_identity()
-    helper_id = request.form.get('helper_id')
-    description = request.form.get('description')
-    
-    order = Order(description=description, helper_id=helper_id, status_id=1)
-    order.save()
-
-    if os.environ.get('AWS_S3_BUCKET_NAME'):
-        files = request.files
-        for key in files:
-            file = files[key]
-            if file:
-                url_document = upload_file_to_s3(file, os.environ.get('AWS_S3_BUCKET_NAME'))
-                if url_document:
-                    document = Document(name=file.filename, url=url_document, order=order, user_id=user_authenticated_id)
-                    document.save()
-    else:
-        print("Faltan las credenciales de AWS")
-
-    DBManager.commitSession()
-
-    orderSerialized = order.serialize()
-
-    if orderSerialized:
-        new_order_mail(order.helper,order)
-    #Añadir los documentos al objeto
-    orderSerialized["documents"] = list(map(lambda document: document.serialize(), order.documents))
-    return jsonify({"status": "ok", "order": orderSerialized})
 
 @app.route('/login', methods=['POST'])
 def login():
