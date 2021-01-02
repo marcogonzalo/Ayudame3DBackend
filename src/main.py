@@ -115,9 +115,9 @@ def orders():
     user_authenticated_id = get_jwt_identity()
     user = User.query.get(user_authenticated_id)
     if user.role_id == Role.HELPER_ROLE_ID:
-        orders = Order.query.filter(Order.helper_id == user_authenticated_id, Order.status_id != Status.REJECTED_STATUS_ID)
+        orders = Order.query.filter(Order.helper_id == user_authenticated_id, Order.status_id != Status.REJECTED_STATUS_ID, Order.active == True)
     else:
-        orders = Order.query.all()
+        orders = Order.query.filter(Order.active == True).all()
     ordersJson = list(map(lambda order: order.serialize(), orders))
     return jsonify(ordersJson), 200
 
@@ -158,6 +158,18 @@ def create_order():
 @jwt_required
 def get_order(id):
     order = Order.query.get(id)   
+    return jsonify(order.serializeForEditView()), 200
+
+@app.route('/orders/<int:id>', methods=['DELETE'])
+@jwt_required
+def delete_order(id):
+    order = Order.query.get(id)  
+    if order is None:
+        raise APIException('Order not found', status_code=404)
+    order.active = False
+    print("ORDER ACTIVE",order.active)
+    DBManager.commitSession()
+    
     return jsonify(order.serializeForEditView()), 200
 
 @app.route('/orders/<int:id>', methods=['PUT'])

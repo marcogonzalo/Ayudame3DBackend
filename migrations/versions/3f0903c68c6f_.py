@@ -1,8 +1,8 @@
 """empty message
 
-Revision ID: 434e6a03842f
+Revision ID: 3f0903c68c6f
 Revises: 
-Create Date: 2021-01-02 00:12:14.068646
+Create Date: 2021-01-02 23:26:20.778495
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '434e6a03842f'
+revision = '3f0903c68c6f'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -33,7 +33,7 @@ def upgrade():
     sa.Column('email', sa.String(length=120), nullable=False),
     sa.Column('password', sa.String(length=80), nullable=False),
     sa.Column('full_name', sa.String(length=120), nullable=False),
-    sa.Column('phone', sa.String(length=80), nullable=False),
+    sa.Column('phone', sa.String(length=20), nullable=False),
     sa.Column('is_active', sa.Boolean(), nullable=False),
     sa.Column('role_id', sa.Integer(), nullable=False),
     sa.ForeignKeyConstraint(['role_id'], ['role.id'], ),
@@ -53,6 +53,7 @@ def upgrade():
     op.create_table('order',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('description', sa.String(length=120), nullable=False),
+    sa.Column('active', sa.Boolean(), nullable=True),
     sa.Column('helper_id', sa.Integer(), nullable=False),
     sa.Column('status_id', sa.Integer(), nullable=False),
     sa.Column('address_delivery_id', sa.Integer(), nullable=True),

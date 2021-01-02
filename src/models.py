@@ -47,7 +47,8 @@ class User(db.Model, ModelHelper):
 
 class Order(db.Model, ModelHelper): 
     id = db.Column(db.Integer, primary_key=True) 
-    description = db.Column(db.String(120), unique=False, nullable=False)   
+    description = db.Column(db.String(120), unique=False, nullable=False)
+    active = db.Column(db.Boolean, unique=False, default=True)   
     # Claves Foráneas:
     helper_id = db.Column(db.Integer, db.ForeignKey('user.id'), unique=False, nullable=False)
     status_id = db.Column(db.Integer, db.ForeignKey('status.id'), unique=False, nullable=False)
