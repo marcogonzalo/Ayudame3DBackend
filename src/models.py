@@ -21,7 +21,7 @@ class User(db.Model, ModelHelper):
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(80), unique=False, nullable=False)
     full_name = db.Column(db.String(120), unique=False, nullable=False)
-    phone = db.Column(db.Integer, unique=False, nullable=False)
+    phone = db.Column(db.String(20), unique=False, nullable=False)
     is_active = db.Column(db.Boolean(), unique=False, nullable=False)
     #Claves ajenas:
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'), unique=False, nullable=False)
@@ -47,7 +47,8 @@ class User(db.Model, ModelHelper):
 
 class Order(db.Model, ModelHelper): 
     id = db.Column(db.Integer, primary_key=True) 
-    description = db.Column(db.String(120), unique=False, nullable=False)   
+    description = db.Column(db.String(120), unique=False, nullable=False)
+    active = db.Column(db.Boolean, unique=False, default=True)   
     # Claves Foráneas:
     helper_id = db.Column(db.Integer, db.ForeignKey('user.id'), unique=False, nullable=False)
     status_id = db.Column(db.Integer, db.ForeignKey('status.id'), unique=False, nullable=False)
