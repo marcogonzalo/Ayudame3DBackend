@@ -103,12 +103,6 @@ def create_user():
     new_user.save()
     DBManager.commitSession()
 
-    
-    print('form',form)
-
- 
-
-
     return jsonify("User created"), 201
 
 @app.route('/users/<int:id>', methods=['PUT'])
@@ -125,6 +119,18 @@ def save_user(id):
     user.save()
     DBManager.commitSession()
 
+    return jsonify(user.serialize()), 200
+
+@app.route('/users/<int:id>', methods=['DELETE'])
+@jwt_required
+def delete_user(id):
+    user = User.query.get(id)  
+    if user is None:
+        raise APIException('User not found', status_code=404)
+    user.active = False
+    print("user ACTIVE",user.active)
+    DBManager.commitSession()
+    
     return jsonify(user.serialize()), 200
 
 @app.route('/roles', methods=['GET'])
