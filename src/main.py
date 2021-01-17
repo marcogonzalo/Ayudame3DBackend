@@ -16,6 +16,8 @@ from flask_jwt_extended import (
 )
 from mailer import new_order_mail, order_acceptance_mail, order_rejection_mail, order_status_update_mail
 
+from werkzeug.security import generate_password_hash, check_password_hash
+
 app = Flask(__name__)
 app.url_map.strict_slashes = False
 app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DB_CONNECTION_STRING')
@@ -27,6 +29,7 @@ setup_admin(app)
 
 app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')  # Change this!
 jwt = JWTManager(app)
+
 
 # Handle/serialize errors like a JSON object
 @app.errorhandler(APIException)
@@ -85,6 +88,21 @@ def users():
 def edit_user(id):
     user = User.query.get(id)
     return jsonify(user.serialize()), 200
+
+@app.route('/users/create', methods=['POST'])
+# @jwt_required
+def create_user():
+    user_authenticated_id = get_jwt_identity()
+    form = request.form.to_dict()
+
+    form['password_user'] = generate_password_hash(form['password_user'], method='sha256')
+
+    # form['password_user']='sergio'
+    # print('user',user_authenticated_id)
+    print('form',form['password_user'])
+
+
+    return jsonify("User created"), 201
 
 @app.route('/users/<int:id>', methods=['PUT'])
 @jwt_required
