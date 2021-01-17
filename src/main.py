@@ -93,13 +93,20 @@ def edit_user(id):
 # @jwt_required
 def create_user():
     user_authenticated_id = get_jwt_identity()
-    form = request.form.to_dict()
 
+    form = request.form.to_dict()
     form['password_user'] = generate_password_hash(form['password_user'], method='sha256')
 
-    # form['password_user']='sergio'
-    # print('user',user_authenticated_id)
-    print('form',form['password_user'])
+    new_user = User(email=str(form["email_address"]),password=form['password_user'],full_name=str(form["full_name"]),phone=str(form["phone_number"]), is_active= True)
+    new_user.role_id = form["role_id"]
+
+    new_user.save()
+    DBManager.commitSession()
+
+    
+    print('form',form)
+
+ 
 
 
     return jsonify("User created"), 201
@@ -304,10 +311,18 @@ def login():
         return jsonify({"msg": "Missing email parameter"}), 400
     if not password:
         return jsonify({"msg": "Missing password parameter"}), 400
-    user = User.query.filter_by(email=email).filter_by(password=password).filter_by(is_active=True).one_or_none()
+
+    user = User.query.filter_by(email=email).filter_by(is_active=True).one_or_none()
     if not user:
         return jsonify({"status": 'ko', "msg": "Bad username or password"}), 401
-    access_token = create_access_token(identity=user.id)
+
+    # access_token = create_access_token(identity=user.id)
+
+    if check_password_hash(user.password, password): 
+        access_token = create_access_token(identity=user.id)
+    else:
+        return jsonify({"status": 'ko', "msg": "Bad username or password"}), 401
+
     return jsonify({"status": 'ok', "access_token": access_token, "user": user.serialize()}), 200
 
 @app.route('/get-user-authenticated', methods=["GET"])
