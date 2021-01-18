@@ -79,7 +79,7 @@ def create_statuses():
 @app.route('/users', methods=['GET'])
 @jwt_required
 def users():
-    users = User.query.all()
+    users = User.query.filter(User.is_active == True).all()
     usersJson = list(map(lambda user: user.serialize(), users))
     return jsonify(usersJson), 200
 
@@ -127,8 +127,7 @@ def delete_user(id):
     user = User.query.get(id)  
     if user is None:
         raise APIException('User not found', status_code=404)
-    user.active = False
-    print("user ACTIVE",user.active)
+    user.is_active = False
     DBManager.commitSession()
     
     return jsonify(user.serialize()), 200
