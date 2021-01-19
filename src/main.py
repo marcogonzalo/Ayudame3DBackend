@@ -15,6 +15,9 @@ from flask_jwt_extended import (
     get_jwt_identity
 )
 from mailer import new_order_mail, order_acceptance_mail, order_rejection_mail, order_status_update_mail
+from commands import create_admin, create_roles, create_statuses
+
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
@@ -28,44 +31,15 @@ setup_admin(app)
 app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')  # Change this!
 jwt = JWTManager(app)
 
+app.cli.add_command(create_admin)
+app.cli.add_command(create_roles)
+app.cli.add_command(create_statuses)
+
 # Handle/serialize errors like a JSON object
 @app.errorhandler(APIException)
 def handle_invalid_usage(error):
     return jsonify(error.to_dict()), error.status_code
 
-@app.cli.command("create-roles")
-def create_roles():
-    if not Role.query.get(Role.ADMIN_ROLE_ID):
-        role = Role(id=Role.ADMIN_ROLE_ID, name="Admin")
-        role.save()
-    if not Role.query.get(Role.MANAGER_ROLE_ID):
-        role = Role(id=Role.MANAGER_ROLE_ID, name="Manager")
-        role.save()
-    if not Role.query.get(Role.HELPER_ROLE_ID):
-        role = Role(id=Role.HELPER_ROLE_ID, name="Helper")
-        role.save()
-    DBManager.commitSession()
-    return
-
-@app.cli.command("create-statuses")
-def create_statuses():
-    if not Status.query.get(Status.PENDING_STATUS_ID):
-        status = Status(id=Status.PENDING_STATUS_ID, name="Pending")
-        status.save()
-    if not Status.query.get(Status.REJECTED_STATUS_ID):
-        status = Status(id=Status.REJECTED_STATUS_ID, name="Rejected")
-        status.save()
-    if not Status.query.get(Status.PROCESSING_STATUS_ID):
-        status = Status(id=Status.PROCESSING_STATUS_ID, name="Processing")
-        status.save()
-    if not Status.query.get(Status.READY_STATUS_ID):
-        status = Status(id=Status.READY_STATUS_ID, name="Ready")
-        status.save()
-    if not Status.query.get(5):
-        status = Status(id=5, name="Complete")
-        status.save()
-    DBManager.commitSession()
-    return
 
 # generate sitemap with all your endpoints
 # @app.route('/')
@@ -76,7 +50,7 @@ def create_statuses():
 @app.route('/users', methods=['GET'])
 @jwt_required
 def users():
-    users = User.query.all()
+    users = User.query.filter(User.is_active == True).all()
     usersJson = list(map(lambda user: user.serialize(), users))
     return jsonify(usersJson), 200
 
@@ -85,6 +59,22 @@ def users():
 def edit_user(id):
     user = User.query.get(id)
     return jsonify(user.serialize()), 200
+
+@app.route('/users/create', methods=['POST'])
+# @jwt_required
+def create_user():
+    user_authenticated_id = get_jwt_identity()
+
+    form = request.form.to_dict()
+    form['password_user'] = generate_password_hash(form['password_user'], method='sha256')
+
+    new_user = User(email=str(form["email_address"]),password=form['password_user'],full_name=str(form["full_name"]),phone=str(form["phone_number"]), is_active= True)
+    new_user.role_id = form["role_id"]
+
+    new_user.save()
+    DBManager.commitSession()
+
+    return jsonify("User created"), 201
 
 @app.route('/users/<int:id>', methods=['PUT'])
 @jwt_required
@@ -100,6 +90,17 @@ def save_user(id):
     user.save()
     DBManager.commitSession()
 
+    return jsonify(user.serialize()), 200
+
+@app.route('/users/<int:id>', methods=['DELETE'])
+@jwt_required
+def delete_user(id):
+    user = User.query.get(id)  
+    if user is None:
+        raise APIException('User not found', status_code=404)
+    user.is_active = False
+    DBManager.commitSession()
+    
     return jsonify(user.serialize()), 200
 
 @app.route('/roles', methods=['GET'])
@@ -286,10 +287,18 @@ def login():
         return jsonify({"msg": "Missing email parameter"}), 400
     if not password:
         return jsonify({"msg": "Missing password parameter"}), 400
-    user = User.query.filter_by(email=email).filter_by(password=password).filter_by(is_active=True).one_or_none()
+
+    user = User.query.filter_by(email=email).filter_by(is_active=True).one_or_none()
     if not user:
         return jsonify({"status": 'ko', "msg": "Bad username or password"}), 401
-    access_token = create_access_token(identity=user.id)
+
+    # access_token = create_access_token(identity=user.id)
+
+    if check_password_hash(user.password, password): 
+        access_token = create_access_token(identity=user.id)
+    else:
+        return jsonify({"status": 'ko', "msg": "Bad username or password"}), 401
+
     return jsonify({"status": 'ok', "access_token": access_token, "user": user.serialize()}), 200
 
 @app.route('/get-user-authenticated', methods=["GET"])
