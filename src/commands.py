@@ -7,7 +7,7 @@ from flask.cli import with_appcontext
 from sqlalchemy import create_engine, Table
 from werkzeug.security import generate_password_hash, check_password_hash
 
-from models import User, Role, DBManager
+from models import User, Role, Status, DBManager
 
 
 @click.command()
