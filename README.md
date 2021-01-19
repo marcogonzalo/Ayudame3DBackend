@@ -56,6 +56,12 @@ $ pipenv run migrate (to create the database)
 $ pipenv run start (to start the flask webserver)
 ```
 
+Also, you will need to initialize the database and create an admin account:
+```sh
+$ pipenv run flask create-roles
+$ pipenv run flask create-statuses
+$ pipenv run flask create-admin
+```
 
 ## Deploy to Heroku
 

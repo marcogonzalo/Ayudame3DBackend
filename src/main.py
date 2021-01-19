@@ -15,6 +15,7 @@ from flask_jwt_extended import (
     get_jwt_identity
 )
 from mailer import new_order_mail, order_acceptance_mail, order_rejection_mail, order_status_update_mail
+from commands import create_admin, create_roles, create_statuses
 
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -30,45 +31,15 @@ setup_admin(app)
 app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')  # Change this!
 jwt = JWTManager(app)
 
+app.cli.add_command(create_admin)
+app.cli.add_command(create_roles)
+app.cli.add_command(create_statuses)
 
 # Handle/serialize errors like a JSON object
 @app.errorhandler(APIException)
 def handle_invalid_usage(error):
     return jsonify(error.to_dict()), error.status_code
 
-@app.cli.command("create-roles")
-def create_roles():
-    if not Role.query.get(Role.ADMIN_ROLE_ID):
-        role = Role(id=Role.ADMIN_ROLE_ID, name="Admin")
-        role.save()
-    if not Role.query.get(Role.MANAGER_ROLE_ID):
-        role = Role(id=Role.MANAGER_ROLE_ID, name="Manager")
-        role.save()
-    if not Role.query.get(Role.HELPER_ROLE_ID):
-        role = Role(id=Role.HELPER_ROLE_ID, name="Helper")
-        role.save()
-    DBManager.commitSession()
-    return
-
-@app.cli.command("create-statuses")
-def create_statuses():
-    if not Status.query.get(Status.PENDING_STATUS_ID):
-        status = Status(id=Status.PENDING_STATUS_ID, name="Pending")
-        status.save()
-    if not Status.query.get(Status.REJECTED_STATUS_ID):
-        status = Status(id=Status.REJECTED_STATUS_ID, name="Rejected")
-        status.save()
-    if not Status.query.get(Status.PROCESSING_STATUS_ID):
-        status = Status(id=Status.PROCESSING_STATUS_ID, name="Processing")
-        status.save()
-    if not Status.query.get(Status.READY_STATUS_ID):
-        status = Status(id=Status.READY_STATUS_ID, name="Ready")
-        status.save()
-    if not Status.query.get(5):
-        status = Status(id=5, name="Complete")
-        status.save()
-    DBManager.commitSession()
-    return
 
 # generate sitemap with all your endpoints
 # @app.route('/')
