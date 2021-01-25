@@ -119,7 +119,10 @@ def orders():
         orders = Order.query.filter(Order.helper_id == user_authenticated_id, Order.status_id != Status.REJECTED_STATUS_ID, Order.active == True)
     else:
         orders = Order.query.filter(Order.active == True).all()
+
     ordersJson = list(map(lambda order: order.serialize(), orders))
+    ordersJson.sort(key=lambda x: x["created_at"], reverse= True)
+
     return jsonify(ordersJson), 200
 
 @app.route('/orders', methods=['POST'])
