@@ -116,10 +116,12 @@ def orders():
     user_authenticated_id = get_jwt_identity()
     user = User.query.get(user_authenticated_id)
     if user.role_id == Role.HELPER_ROLE_ID:
-        orders = Order.query.filter(Order.helper_id == user_authenticated_id, Order.status_id != Status.REJECTED_STATUS_ID, Order.active == True)
+        orders = Order.query.filter(Order.helper_id == user_authenticated_id, Order.status_id != Status.REJECTED_STATUS_ID, Order.active == True).order_by(Order.created_at.desc()).all()
     else:
-        orders = Order.query.filter(Order.active == True).all()
+        orders = Order.query.filter(Order.active == True).order_by(Order.created_at.desc()).all()
+
     ordersJson = list(map(lambda order: order.serialize(), orders))
+
     return jsonify(ordersJson), 200
 
 @app.route('/orders', methods=['POST'])
