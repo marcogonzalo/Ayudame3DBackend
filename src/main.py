@@ -14,7 +14,10 @@ from flask_jwt_extended import (
     JWTManager, jwt_required, create_access_token,
     get_jwt_identity
 )
-from mailer import new_order_mail, order_acceptance_mail, order_rejection_mail, order_status_update_mail
+from mailer import (
+    new_order_mail, order_acceptance_mail, order_rejection_mail, 
+    order_status_update_mail, order_new_data_mail
+)
 from commands import create_admin, create_roles, create_statuses
 
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -179,7 +182,7 @@ def delete_order(id):
 @jwt_required
 def update_order(id):
     order = Order.query.get(id)
-    if request.form.get('helper_id') and int(request.form.get('helper_id')) != order.helper_id:
+    if request.form.get('helper_id') and (int(request.form.get('helper_id')) != order.helper_id or order.status_id == Status.REJECTED_STATUS_ID):
         order.status_id = Status.PROCESSING_STATUS_ID
         order.helper_id = request.form.get('helper_id')
         order.save()
