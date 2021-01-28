@@ -1,4 +1,5 @@
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.sql import func
 
 db = SQLAlchemy()
 
@@ -48,7 +49,8 @@ class User(db.Model, ModelHelper):
 class Order(db.Model, ModelHelper): 
     id = db.Column(db.Integer, primary_key=True) 
     description = db.Column(db.String(120), unique=False, nullable=False)
-    active = db.Column(db.Boolean, unique=False, default=True)   
+    active = db.Column(db.Boolean, unique=False, default=True)  
+    created_at = db.Column(db.DateTime, server_default=func.now()) 
     # Claves Foráneas:
     helper_id = db.Column(db.Integer, db.ForeignKey('user.id'), unique=False, nullable=False)
     status_id = db.Column(db.Integer, db.ForeignKey('status.id'), unique=False, nullable=False)
@@ -73,7 +75,8 @@ class Order(db.Model, ModelHelper):
             "helper": self.helper.serialize(),
             "status": self.status.serialize(),
             "status_id": self.status_id,
-            "description": self.description
+            "description": self.description,
+            "created_at": self.created_at
         }
 
     def serializeForEditView(self):
