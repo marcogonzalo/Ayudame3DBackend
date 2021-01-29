@@ -137,6 +137,7 @@ def create_order():
     order = Order(description=description, helper_id=helper_id, status_id=1)
     order.save()
 
+    # Modify below: the files will be saved as an existent URL, no need to store on S3
     if os.environ.get('AWS_S3_BUCKET_NAME'):
         files = request.files
         for key in files:
@@ -233,16 +234,44 @@ def set_order_ready(id):
 @jwt_required
 def save_video(id):
     user_authenticated_id = get_jwt_identity()
-    video = request.json.get('video', None)
     order = Order.query.get(id)
-    
-    document = Document(name="Video", url=video, order=order, user_id=user_authenticated_id)
-    document.save()
+
+    if os.environ.get('AWS_S3_BUCKET_NAME'):
+        files = request.files
+
+        for key in files:
+
+            file = files[key]
+
+            if file:
+                url_document = upload_file_to_s3(file, os.environ.get('AWS_S3_BUCKET_NAME'))
+
+                if url_document: #Check below if it is order_id instead of order
+                    document = Document(name=file.filename, url=url_document, order=order, user_id=user_authenticated_id)
+                    document.save()
+    else:
+        print("Faltan las credenciales de AWS")
+
 
     DBManager.commitSession()
     order_new_data_mail(order)
 
     return jsonify(order.serializeForEditView()), 200
+
+@app.route('/orders/<int:id>/save-files', methods=['POST'])
+@jwt_required
+def save_order_files(id):
+    user_authenticated_id = get_jwt_identity()
+    order = Order.query.get(id)
+    body = request.get_json()
+
+    document = Document(name='order '+str(order.id)+' files', url=body['files'], order=order, user_id=user_authenticated_id)
+    document.save()
+    DBManager.commitSession()
+
+    order_new_data_mail(order)
+
+    return jsonify(order.serializeForEditView()), 201
 
 @app.route('/orders/<int:id>/addresses/save', methods=['POST'])
 @jwt_required
