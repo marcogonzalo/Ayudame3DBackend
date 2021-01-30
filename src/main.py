@@ -273,20 +273,20 @@ def save_order_files(id):
 def save_order_addresses(id):
     user_authenticated_id = get_jwt_identity()
     
-    pickup_address = Address(address=request.json.get('pickup').get('address'), city=request.json.get('pickup').get('city'), country=request.json.get('pickup').get('country'), cp=request.json.get('pickup').get('CP'),user_id=user_authenticated_id)
-    pickup_address.save()
+    # pickup_address = Address(address=request.json.get('pickup').get('address'), city=request.json.get('pickup').get('city'), country=request.json.get('pickup').get('country'), cp=request.json.get('pickup').get('CP'),user_id=user_authenticated_id)
+    # pickup_address.save()
     
-    delivery_address = Address(address=request.json.get('delivery').get('address'), city=request.json.get('delivery').get('city'), country=request.json.get('delivery').get('country'), cp=request.json.get('delivery').get('CP'),user_id=user_authenticated_id)
-    delivery_address.save()
+    # delivery_address = Address(address=request.json.get('delivery').get('address'), city=request.json.get('delivery').get('city'), country=request.json.get('delivery').get('country'), cp=request.json.get('delivery').get('CP'),user_id=user_authenticated_id)
+    # delivery_address.save()
     
     order = Order.query.get(id)
     
-    order.address_delivery = delivery_address
-    order.address_pickup = pickup_address
+    # order.address_delivery = delivery_address
+    # order.address_pickup = pickup_address
 
-    order.save()
+    # order.save()
 
-    DBManager.commitSession()
+    # DBManager.commitSession()
     order_new_data_mail(order)
 
     return jsonify(order.serializeForEditView()), 200

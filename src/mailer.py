@@ -84,10 +84,10 @@ def order_new_data_mail(order):
     msg = Mail(
         from_email=os.environ.get('MAIL_DEFAULT_SENDER'),
         to_emails=os.environ.get('MAIL_DEFAULT_SENDER'),
-        subject=f'El pedido {order.id} ha cambiado de estado',
+        subject=f'El pedido {order.id} ha sido actualizado',
         html_content=(
             __get_template_message(
-                f'<h1>El pedido {order.id} ha cambiado de estado</h1>'
+                f'<h1>El pedido {order.id} tiene nuevos datos</h1>'
                 f'<p>El pedido {order.id} ha sido cambiado a {status.name}.</p>'
             )
         )
