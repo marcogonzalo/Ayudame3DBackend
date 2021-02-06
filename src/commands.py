@@ -74,8 +74,8 @@ def create_statuses():
     if not Status.query.get(Status.READY_STATUS_ID):
         status = Status(id=Status.READY_STATUS_ID, name="Ready")
         status.save()
-    if not Status.query.get(5):
-        status = Status(id=5, name="Complete")
+    if not Status.query.get(Status.APPROVED_STATUS_ID):
+        status = Status(id=Status.APPROVED_STATUS_ID, name="Approved")
         status.save()
     DBManager.commitSession()
     return
