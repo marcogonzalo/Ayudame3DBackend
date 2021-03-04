@@ -223,6 +223,16 @@ def set_order_ready(id):
     order_status_update_mail(order)
     return jsonify(order.serializeForEditView()), 200
 
+@app.route('/orders/<int:id>/set-approved', methods=['POST'])
+@jwt_required
+def set_order_approved(id):
+    order = Order.query.get(id)
+    order.status_id = Status.APPROVED_STATUS_ID
+    order.save()
+    DBManager.commitSession()
+    order_status_update_mail(order)
+    return jsonify(order.serializeForEditView()), 200
+
 @app.route('/orders/<int:id>/save-video', methods=['POST'])
 @jwt_required
 def save_video(id):
@@ -231,7 +241,7 @@ def save_video(id):
 
     if os.environ.get('AWS_S3_BUCKET_NAME'):
         files = request.files
-
+        print("files", files)
         for key in files:
 
             file = files[key]
