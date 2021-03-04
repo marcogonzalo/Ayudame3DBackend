@@ -99,6 +99,7 @@ class Status(db.Model, ModelHelper):
     PROCESSING_STATUS_ID = 3
     READY_STATUS_ID = 4
     APPROVED_STATUS_ID = 5
+    COMPLETED_STATUS_ID = 6
 
     def __repr__(self):
         return '<Status %s>' % self.name

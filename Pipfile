@@ -34,3 +34,4 @@ deploy="echo 'Please follow this 3 steps to deploy: https://github.com/4GeeksAca
 create-roles = "flask create-roles"
 create-statuses = "flask create-statuses"
 create-admin = "flask create-admin"
+prepare = "bash -c \"flask create-roles && flask create-statuses && flask create-admin\""

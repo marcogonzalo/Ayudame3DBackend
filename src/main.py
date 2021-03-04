@@ -177,7 +177,7 @@ def delete_order(id):
 def update_order(id):
     order = Order.query.get(id)
     if request.form.get('helper_id') and (int(request.form.get('helper_id')) != order.helper_id or order.status_id == Status.REJECTED_STATUS_ID):
-        order.status_id = Status.PROCESSING_STATUS_ID
+        order.status_id = Status.PENDING_STATUS_ID
         order.helper_id = request.form.get('helper_id')
         order.save()
         new_order_mail(order.helper,order)
@@ -290,13 +290,17 @@ def save_order_addresses(id):
     # delivery_address.save()
     
     order = Order.query.get(id)
-    
     # order.address_delivery = delivery_address
     # order.address_pickup = pickup_address
 
     # order.save()
 
-    # DBManager.commitSession()
+    order.status_id = Status.COMPLETED_STATUS_ID
+    order.save()
+    response = DBManager.commitSession()
+    order_rejection_mail(order)
+    
+
     order_new_data_mail(order)
 
     return jsonify(order.serializeForEditView()), 200
