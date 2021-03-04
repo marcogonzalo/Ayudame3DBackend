@@ -84,7 +84,7 @@ def order_new_data_mail(order):
     status = Status.query.get(order.status_id) 
     msg = Mail(
         from_email=MAIL_DEFAULT_SENDER,
-        to_emails='mgomez@4geeks.co',
+        to_emails=MAIL_DEFAULT_SENDER,
         subject=f'El pedido {order.id} ha sido actualizado',
         html_content=(
             __get_template_message(
