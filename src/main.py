@@ -8,7 +8,7 @@ from flask_swagger import swagger
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
 from admin import setup_admin
-from models import db, User, Order, Document, Role, DBManager, User, Status, Address
+from models import db, User, Order, Document, Role, DBManager, Status, Address
 from amazonawss3 import upload_file_to_s3
 from flask_jwt_extended import (
     JWTManager, jwt_required, create_access_token,
@@ -24,7 +24,12 @@ from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.url_map.strict_slashes = False
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DB_CONNECTION_STRING')
+# database condiguration
+if os.environ.get("DATABASE_URL") is not None:
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URL')
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = "sqlite:////tmp/test.db"
+
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 MIGRATE = Migrate(app, db)
 db.init_app(app)
@@ -51,20 +56,20 @@ def handle_invalid_usage(error):
 
 #========================================================================
 @app.route('/users', methods=['GET'])
-@jwt_required
+@jwt_required()
 def users():
     users = User.query.filter(User.is_active == True).all()
     usersJson = list(map(lambda user: user.serialize(), users))
     return jsonify(usersJson), 200
 
 @app.route('/users/<int:id>', methods=['GET'])
-@jwt_required
+@jwt_required()
 def edit_user(id):
     user = User.query.get(id)
     return jsonify(user.serialize()), 200
 
 @app.route('/users/create', methods=['POST'])
-# @jwt_required
+@jwt_required()
 def create_user():
     user_authenticated_id = get_jwt_identity()
 
@@ -80,7 +85,7 @@ def create_user():
     return jsonify("User created"), 201
 
 @app.route('/users/<int:id>', methods=['PUT'])
-@jwt_required
+@jwt_required()
 def save_user(id):
     userData = request.json.get('user', None)
     user = User.query.get(id)
@@ -96,7 +101,7 @@ def save_user(id):
     return jsonify(user.serialize()), 200
 
 @app.route('/users/<int:id>', methods=['DELETE'])
-@jwt_required
+@jwt_required()
 def delete_user(id):
     user = User.query.get(id)  
     if user is None:
@@ -107,14 +112,14 @@ def delete_user(id):
     return jsonify(user.serialize()), 200
 
 @app.route('/roles', methods=['GET'])
-@jwt_required
+@jwt_required()
 def roles():
     roles = Role.query.all()
     rolesJson = list(map(lambda role: role.serialize(), roles))
     return jsonify(rolesJson), 200
 
 @app.route('/orders', methods=['GET'])
-@jwt_required
+@jwt_required()
 def orders():
     user_authenticated_id = get_jwt_identity()
     user = User.query.get(user_authenticated_id)
@@ -128,7 +133,7 @@ def orders():
     return jsonify(ordersJson), 200
 
 @app.route('/orders', methods=['POST'])
-@jwt_required
+@jwt_required()
 def create_order():
     user_authenticated_id = get_jwt_identity()
     helper_id = request.form.get('helper_id')
@@ -155,13 +160,13 @@ def create_order():
 
 
 @app.route('/orders/<int:id>', methods=['GET'])
-@jwt_required
+@jwt_required()
 def get_order(id):
     order = Order.query.get(id)   
     return jsonify(order.serializeForEditView()), 200
 
 @app.route('/orders/<int:id>', methods=['DELETE'])
-@jwt_required
+@jwt_required()
 def delete_order(id):
     order = Order.query.get(id)  
     if order is None:
@@ -173,7 +178,7 @@ def delete_order(id):
     return jsonify(order.serializeForEditView()), 200
 
 @app.route('/orders/<int:id>', methods=['PUT'])
-@jwt_required
+@jwt_required()
 def update_order(id):
     order = Order.query.get(id)
     if request.form.get('helper_id') and (int(request.form.get('helper_id')) != order.helper_id or order.status_id == Status.REJECTED_STATUS_ID):
@@ -192,7 +197,7 @@ def update_order(id):
     return jsonify(orderSerialized), 200
 
 @app.route('/orders/<int:id>/accept', methods=['POST'])
-@jwt_required
+@jwt_required()
 def accept_order(id):
     order = Order.query.get(id)
     order.status_id = Status.PROCESSING_STATUS_ID
@@ -203,7 +208,7 @@ def accept_order(id):
     return jsonify(order.serializeForEditView()), 200
 
 @app.route('/orders/<int:id>/reject', methods=['POST'])
-@jwt_required
+@jwt_required()
 def reject_order(id):
     order = Order.query.get(id)
     order.status_id = Status.REJECTED_STATUS_ID
@@ -214,7 +219,7 @@ def reject_order(id):
     return jsonify(order.serializeForEditView()), 200
 
 @app.route('/orders/<int:id>/set-ready', methods=['POST'])
-@jwt_required
+@jwt_required()
 def set_order_ready(id):
     order = Order.query.get(id)
     order.status_id = Status.READY_STATUS_ID
@@ -224,7 +229,7 @@ def set_order_ready(id):
     return jsonify(order.serializeForEditView()), 200
 
 @app.route('/orders/<int:id>/set-approved', methods=['POST'])
-@jwt_required
+@jwt_required()
 def set_order_approved(id):
     order = Order.query.get(id)
     order.status_id = Status.APPROVED_STATUS_ID
@@ -234,7 +239,7 @@ def set_order_approved(id):
     return jsonify(order.serializeForEditView()), 200
 
 @app.route('/orders/<int:id>/save-video', methods=['POST'])
-@jwt_required
+@jwt_required()
 def save_video(id):
     user_authenticated_id = get_jwt_identity()
     order = Order.query.get(id)
@@ -262,7 +267,7 @@ def save_video(id):
     return jsonify(order.serializeForEditView()), 200
 
 @app.route('/orders/<int:id>/save-files', methods=['POST'])
-@jwt_required
+@jwt_required()
 def save_order_files(id):
     user_authenticated_id = get_jwt_identity()
     order = Order.query.get(id)
@@ -279,7 +284,7 @@ def save_order_files(id):
     return jsonify(order.serializeForEditView()), 201
 
 @app.route('/orders/<int:id>/addresses/save', methods=['POST'])
-@jwt_required
+@jwt_required()
 def save_order_addresses(id):
     user_authenticated_id = get_jwt_identity()
     
@@ -306,7 +311,7 @@ def save_order_addresses(id):
     return jsonify(order.serializeForEditView()), 200
 
 @app.route('/documents/<int:id>/delete', methods=['DELETE'])
-@jwt_required
+@jwt_required()
 def delete_document(id):
     document = Document.query.get(id)
     document.delete()
@@ -314,7 +319,7 @@ def delete_document(id):
     return jsonify(document.serialize()), 200
 
 @app.route('/helpers', methods=['GET'])
-@jwt_required
+@jwt_required()
 def helpers():
     helpers = User.query.filter_by(role_id=Role.HELPER_ROLE_ID).all()
     helpersJson = list(map(lambda helper: helper.serialize(), helpers))
@@ -345,7 +350,7 @@ def login():
     return jsonify({"status": 'ok', "access_token": access_token, "user": user.serialize()}), 200
 
 @app.route('/get-user-authenticated', methods=["GET"])
-@jwt_required
+@jwt_required()
 def get_user_authenticated():
     current_user_id = get_jwt_identity()
     user = User.query.get(current_user_id)

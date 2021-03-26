@@ -3,16 +3,17 @@ image:
 ports:
     - port: 3000
       onOpen: open-preview
-    - port: 3306
+    - port: 5432
       onOpen: ignore
 tasks:
-    - init: |
-        cp .env.example .env;
-        pipenv install;
-        mysql -u root -e "CREATE DATABASE example";
-        pipenv run init;
-        pipenv run migrate;
-        pipenv run upgrade;
+    - init: >
+        (cp -n .env.example .env || true) && 
+        pipenv install &&
+        psql -U gitpod -c 'CREATE DATABASE example;' &&
+        psql -U gitpod -c 'CREATE EXTENSION unaccent;' -d example &&
+        pipenv run init && 
+        pipenv run migrate && 
+        pipenv run upgrade
       command: >
         pipenv run start;
     - command: python3 welcome.py
