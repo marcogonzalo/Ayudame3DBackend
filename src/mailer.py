@@ -1,10 +1,12 @@
 import os
+from flask import url_for
 from sendgrid import SendGridAPIClient
 from sendgrid.helpers.mail import Mail
 from models import Status
 
 FRONTEND_URL = os.environ.get('FRONTEND_URL')
 MAIL_DEFAULT_SENDER = os.environ.get('MAIL_DEFAULT_SENDER')
+A3D_LOGO = 'https://ayudame3d.org/wp-content/uploads/2020/10/logobannerwhite_182x50.png'
 
 def __send_email(message):
     try:
@@ -19,9 +21,17 @@ def __send_email(message):
         return False
 
 def __get_template_message(message):
-    header = '<div style="background-color: #40519f; color: #ffffff; padding: 40px 10px; text-align: center; width: 100%;">Ayúdame 3D</div>'
+    header = f"""
+        <div style="background-color: #40519f; color: #ffffff; padding: 40px 10px; text-align: center; width: 100%;">
+            <img alt="Ayúdame3D" title="Ayúdame3D" src="{A3D_LOGO}" />
+        </div>
+    """
     content = f'<div>{message}</div>'
-    footer = '<div style="background-color: #40519f; color: #ffffff; padding: 40px 10px; text-align: center; width: 100%;">Ayúdame 3D</div>'
+    footer = f"""
+        <div style="background-color: #40519f; color: #ffffff; padding: 40px 10px; text-align: center; width: 100%;">
+            <img alt="Ayúdame3D" title="Ayúdame3D" src="{A3D_LOGO}" />
+        </div>
+    """
     return header + content + footer
 
 def new_order_mail(helper, order):
