@@ -21,10 +21,12 @@ The following steps are automatically runned withing gitpod, if you are doing a 
 
 ```sh
 pipenv install;
-mysql -u root -e "CREATE DATABASE example";
+psql -U gitpod -c 'CREATE DATABASE example;'
+psql -U gitpod -c 'CREATE EXTENSION unaccent;' -d example
 pipenv run init;
 pipenv run migrate;
 pipenv run upgrade;
+pipenv run prepare;
 ```
 
 ## How to Start coding?
@@ -49,18 +51,18 @@ $ pipenv run upgrade  (to update your databse with the migrations)
 
 # Manual Installation for Ubuntu & Mac
 
-⚠️ Make sure you have `python 3.6+` and `MySQL` installed on your computer and MySQL is running, then run the following commands:
+⚠️ Make sure you have `python 3.6+` and `PostgreSQL` installed on your computer and PostgreSQL is running, then run the following commands:
 ```sh
 $ pipenv install (to install pip packages)
+$ psql -U gitpod -c 'CREATE DATABASE example;'
+$ psql -U gitpod -c 'CREATE EXTENSION unaccent;' -d example
 $ pipenv run migrate (to create the database)
 $ pipenv run start (to start the flask webserver)
 ```
 
 Also, you will need to initialize the database and create an admin account:
 ```sh
-$ pipenv run flask create-roles
-$ pipenv run flask create-statuses
-$ pipenv run flask create-admin
+$ pipenv run prepare
 ```
 
 ## Deploy to Heroku

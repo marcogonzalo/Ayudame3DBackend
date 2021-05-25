@@ -144,7 +144,7 @@ def create_order():
 
     documentURL = request.form.get('files')
     if documentURL:
-        filename='Order files'
+        filename='Documents URL'
         document = Document(name=filename, url=documentURL, order=order, user_id=user_authenticated_id)
         document.save()
  
