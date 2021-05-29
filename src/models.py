@@ -49,6 +49,7 @@ class User(db.Model, ModelHelper):
 class Order(db.Model, ModelHelper): 
     id = db.Column(db.Integer, primary_key=True) 
     description = db.Column(db.String(120), unique=False, nullable=False)
+    long_description = db.Column(db.String(5000), unique=False, nullable=True)
     active = db.Column(db.Boolean, unique=False, default=True)  
     created_at = db.Column(db.DateTime, server_default=func.now()) 
     # Claves Foráneas:
@@ -76,6 +77,7 @@ class Order(db.Model, ModelHelper):
             "status": self.status.serialize(),
             "status_id": self.status_id,
             "description": self.description,
+            "long_description": self.long_description,
             "created_at": self.created_at
         }
 

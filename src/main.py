@@ -118,6 +118,13 @@ def roles():
     rolesJson = list(map(lambda role: role.serialize(), roles))
     return jsonify(rolesJson), 200
 
+@app.route('/status', methods=['GET'])
+@jwt_required()
+def status():
+    statuses = Status.query.all()
+    statusesJson = list(map(lambda status: status.serialize(), statuses))
+    return jsonify(statusesJson), 200
+
 @app.route('/orders', methods=['GET'])
 @jwt_required()
 def orders():
@@ -138,8 +145,9 @@ def create_order():
     user_authenticated_id = get_jwt_identity()
     helper_id = request.form.get('helper_id')
     description = request.form.get('description')
+    long_description = request.form.get('long_description')
   
-    order = Order(description=description, helper_id=helper_id, status_id=1)
+    order = Order(description=description, long_description=long_description, helper_id=helper_id, status_id=1)
     order.save()
 
     documentURL = request.form.get('files')
@@ -188,6 +196,7 @@ def update_order(id):
         new_order_mail(order.helper,order)
     if not request.form.get('description') is None:
         order.description = request.form.get('description')
+        order.long_description = request.form.get('long_description')
         order.save()
 
     DBManager.commitSession()
