@@ -2,12 +2,13 @@
 This module takes care of starting the API Server, Loading the DB and Adding the endpoints
 """
 import os
+import datetime
 from flask import Flask, request, jsonify, url_for
 from flask_migrate import Migrate
 from flask_swagger import swagger
 from flask_cors import CORS
 from utils import APIException, generate_sitemap
-from admin import setup_admin
+# from admin import setup_admin
 from models import db, User, Order, Document, Role, DBManager, Status, Address
 from amazonawss3 import upload_file_to_s3
 from flask_jwt_extended import (
@@ -15,8 +16,8 @@ from flask_jwt_extended import (
     get_jwt_identity
 )
 from mailer import (
-    new_order_mail, order_acceptance_mail, order_rejection_mail, 
-    order_status_update_mail, order_new_data_mail
+    new_order_mail, new_password_email, order_acceptance_mail,
+    order_rejection_mail, order_status_update_mail, order_new_data_mail
 )
 from commands import create_admin, create_roles, create_statuses
 
@@ -34,7 +35,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 MIGRATE = Migrate(app, db)
 db.init_app(app)
 CORS(app)
-setup_admin(app)
+# setup_admin(app)
 
 app.config['JWT_SECRET_KEY'] = os.environ.get('JWT_SECRET_KEY')  # Change this!
 jwt = JWTManager(app)
@@ -110,6 +111,33 @@ def delete_user(id):
     DBManager.commitSession()
     
     return jsonify(user.serialize()), 200
+
+@app.route('/request-password-email', methods=['POST'])
+def send_password_email():
+    email = request.json.get('email', None)
+    user = User.query.filter_by(email=email).first()
+    if user:
+        dt = datetime.datetime.today()
+        today = dt.strftime("%Y-%m-%d")
+        user.reset_password_token = generate_password_hash(user.email+today, method='sha256')
+        user.save()
+        DBManager.commitSession()
+        new_password_email(user)
+    return jsonify({"status": "ok"}), 200
+
+@app.route('/reset-password', methods=['POST'])
+def reset_password():
+    token = request.json.get('token', None)
+    if token and len(token) > 0:
+        user = User.query.filter_by(reset_password_token=token).first()
+        if user:
+            password = request.json.get('password', None)
+            user.password = generate_password_hash(password=password, method='sha256')
+            user.reset_password_token = None
+            user.save()
+            DBManager.commitSession()
+            return jsonify({"status": "ok"}), 200
+    return jsonify({"status": "Bad request"}), 400
 
 @app.route('/roles', methods=['GET'])
 @jwt_required()

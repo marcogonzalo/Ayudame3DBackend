@@ -17,7 +17,7 @@ def __send_email(message):
         print(response.headers)
         return True
     except Exception as e:
-        print(str(e))
+        print("Sendgrid error: ", str(e))
         return False
 
 def __get_template_message(message):
@@ -119,6 +119,23 @@ def order_complete_mail(order):
                 f'<p>Buenas, ¡muchas gracias por toda tu información adjunta! Hemos comprobado que está todo correcto por lo que procedemos a la preparación del paquete.</p>'
                 f'<p>En el siguiente vídeo encontrarás <b>cómo preparar el envío</b>: <a href="{video_url}">{video_url}</a></p>'
                 f'<p>Finalmente, por favor, <b>el siguiente formulario para definir día y hora de recogida en la dirección que mejor te venga</b>: <a href="{form_url}">{form_url}</a></p>'
+            )
+        )
+    )
+    return __send_email(msg)
+
+def new_password_email(user):
+    url = f'{FRONTEND_URL}reset-password?token={user.reset_password_token}'
+    print(url)
+    msg = Mail(
+        from_email=MAIL_DEFAULT_SENDER,
+        to_emails=user.email,
+        subject='Restablecer contraseña de Ayúdame3D',
+        html_content=(
+            __get_template_message(
+                '<h1>Has solicitado restablecer tu contraseña en Ayúdame3D</h1>'
+                f'<p>Para restablecer tu ccontraseña, ingresa en la siguiente dirección: <a href="{url}">{url}</a></p>'
+                '<p>Si no lo has solicitado tú, puedes ignorar este correo.</p>'
             )
         )
     )

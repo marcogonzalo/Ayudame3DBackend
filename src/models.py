@@ -24,6 +24,7 @@ class User(db.Model, ModelHelper):
     full_name = db.Column(db.String(120), unique=False, nullable=False)
     phone = db.Column(db.String(20), unique=False, nullable=False)
     is_active = db.Column(db.Boolean(), unique=False, nullable=False)
+    reset_password_token = db.Column(db.String(80), nullable=True)
     # Claves ajenas:
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'), unique=False, nullable=True)
     # One 
